@@ -1,0 +1,595 @@
+import sys
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QBoxLayout, QHBoxLayout, QWidget, QLabel, QStackedWidget, QSlider
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QButtonGroup
+from PyQt5.QtGui import QPalette, QColor
+from sense_hat import SenseHat
+from time import sleep
+
+sense = SenseHat()
+sense.clear()
+
+#light brightness readings 
+sense.colour.integration_cycles = 128
+
+# Wait for the integration time before taking a reading
+sleep(sense.colour.integration_time + 0.1)
+
+# Reading raw sensor values
+raw_readings = sense.colour.colour_raw
+
+# Extracting brightness value
+brightness_raw = raw_readings[3]  # Index 3 corresponds to the clear_raw value
+
+# Print raw brightness value
+print(f"Raw brightness value: {brightness_raw}")
+
+# The average reading for the normal brightness reading in the room, 
+#calculated using primary source measurements from around a school building.
+normal_brightness = 232.416667
+
+# Calculate the percentage of brightness compared to the 'normal' reading calculated primarily
+brightness_percentage = (brightness_raw / normal_brightness) * 100
+
+print(f"Brightness percentage: {brightness_percentage}%")
+
+temp  = sense.get_temperature()
+#print(temp)
+
+pressure = sense.get_pressure()
+#print(pressure)
+
+humidity = sense.get_humidity()
+#print(humidity)
+
+#light_intensity = sense.low_light()
+
+
+
+class Color(QWidget):
+    def __init__(self, color):
+        super().__init__()
+        self.setAutoFillBackground(True)
+        palette = self.palette()
+        color= QColor(color)
+        palette.setColor(QPalette.Window, color)
+        self.setPalette(palette)
+
+class WelcomePage(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.central_widget= QWidget()
+        self.setWindowTitle("Sixthsense App")
+        self.setCentralWidget(self.central_widget)
+        
+        self.central_widget.setStyleSheet(
+            "background-color: #091E42;"
+        )
+
+        # Get the primary screen
+        screen = QApplication.primaryScreen()
+
+        # Retrieve screen size
+        size = screen.size()
+        screen_height = size.height()
+        screen_width = size.width()
+
+        #variables for the measurements of the app
+        win_width= 800
+        win_height= 480
+        self.setFixedSize(win_width,win_height)
+
+        #variables for the position of the screen relative to the screen size of my window
+        top_pos_x = int((screen_width-win_width)/2)
+        top_pos_y = int((screen_height-win_height)/2)
+        bot_pos_x = int(top_pos_x+win_width)
+        bot_pos_y = int(top_pos_y+win_height)
+        #self.setGeometry(top_pos_x-5, top_pos_y-20, bot_pos_x-5, bot_pos_y-20)
+
+#setting screen dimesions for whole application
+
+        vlayout = QVBoxLayout(self)
+
+        
+        self.central_widget.setLayout(vlayout)
+
+        self.title_welcome_msg = QLabel("Hello, Welcome to Sixthsense.")
+        self.title_welcome_msg.setFixedSize(780,120)
+        font = QtGui.QFont()
+        font.setFamily("Segoe UI Black")
+        font.setPointSize(30)
+        font.setBold(True)
+        #font.setWeight(75)
+        self.title_welcome_msg.setFont(font)
+
+        # Set text alignment to center
+        self.title_welcome_msg.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.title_welcome_msg.setStyleSheet("color: white;\n"
+                                            "background-color:#172B4D;"
+                                            "border-radius: 5px;\n")
+        
+        #creating a horizontal layout for the title for the label to rest centred at the top
+        title_layout= QHBoxLayout()
+        title_layout.addStretch()
+        title_layout.addWidget(self.title_welcome_msg)
+        title_layout.addStretch()
+        #adding title label to vertical layout
+        vlayout.addLayout(title_layout)
+
+        # subtitle (detail label) of welcome page
+        self.title_detail_msg =QLabel(" A safe space that allows individuals to focus")
+        self.title_detail_msg.setStyleSheet('''color:  #90caf9;
+                                            font-size: 23px;
+                                            ''')
+        self.title_detail_msg2 =QLabel("and find peace with their environment.")
+        self.title_detail_msg2.setStyleSheet('''color:  #90caf9;
+                                            font-size: 23px;
+                                            ''')
+
+        #creating horizontal layout for the detail title to sit centred 
+        detail_layout= QHBoxLayout()
+        detail_layout.addStretch()
+        detail_layout.addWidget(self.title_detail_msg)
+        detail_layout.addWidget(self.title_detail_msg2)
+        detail_layout.addStretch()
+        #add layout to the vertical main layout of the welcome page
+        vlayout.addLayout(detail_layout)
+
+        #Creating the get started button to put on the welcome page
+        self.get_started_button = QPushButton("Get Started")
+        self.get_started_button.setFixedSize(250,80)
+        self.get_started_button.setFixedSize(250,80)
+        self.get_started_button.setStyleSheet('''
+                                               QPushButton{
+                                               background-color: #90caf9;
+                                               border: 2px solid #172B4D;
+                                               border-radius: 15px;
+                                               font-size: 25px;
+                                               font-weight: bold;
+                                               color: #091E42;
+                                               }
+                                              
+                                               QPushButton:hover{
+                                               background-color: #b1dafb;
+                                               }
+                                              
+                                               QPushButton:pressed{
+                                               background-color: #73a2c7;
+                                               }
+                                               ''')
+        self.get_started_button.clicked.connect(self.gohome)
+
+        button_layout = QHBoxLayout(self)
+        button_layout.addStretch()
+        button_layout.addWidget(self.get_started_button)
+        button_layout.addStretch()
+        #adding the button layout (horizontal layout) within the vertical layout
+        vlayout.addLayout(button_layout)
+
+
+        footer = Color("#e3f2fd")
+        footer.setFixedSize(win_width,50)
+        vlayout.addWidget(footer)
+        
+    # creating a procedure that changes the current index (page) to page 2 (home page)
+    def gohome(self):
+        self.home_page = HomePage()
+        self.setCentralWidget(self.home_page)
+
+class HomePage(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Square and Rectangle Buttons Example")
+        self.setGeometry(100, 100, 400, 200)
+
+        # Enable auto-fill background
+        self.setAutoFillBackground(True)
+
+        # Set the desired background color of the homepage 
+        palette = self.palette()
+        color = QColor("#172B4D")  # Change this color as needed
+        palette.setColor(QPalette.Window, color)
+        self.setPalette(palette)
+
+        # Create a vertical layout for the entire window
+        main_layout = QHBoxLayout(self)
+
+        
+        #Create buttons to go on the left of the layout
+        left_button_sunken= QWidget()
+        left_button_sunken.setFixedSize(150, 470)
+        left_button_sunken.setStyleSheet('''background-color: #091E42;
+                                            border-radius: 5px; 
+                                         '''
+                                         )
+              
+        left_button_group = QVBoxLayout()
+
+        light_button = QPushButton("Brightness")
+        light_button.setFixedSize(130,130)
+        light_button.setStyleSheet("""
+            QPushButton {
+                background-color:#172B4D ;
+                color: #ffffff;
+                font-size: 20px;
+                border: 1px solid #071835;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #2e405f;
+                
+            }
+                              
+            QPushButton:pressed {
+                background-color: #42A5F5;
+            }
+            """
+        )
+        
+        left_button_group.addWidget(light_button)
+
+        humidity_button = QPushButton("Humidity")
+        humidity_button.setFixedSize(130,130)
+        humidity_button.setStyleSheet("""
+            QPushButton {
+                background-color:#172B4D ;
+                color: #ffffff;
+                font-size: 20px;
+                border: 1px solid #071835;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #2e405f;
+                
+            }
+                              
+            QPushButton:pressed {
+                background-color: #42A5F5;
+            }
+            """
+        )
+        humidity_button.clicked.connect(lambda: self.go_humidity(self.middle_widget))
+        left_button_group.addWidget(humidity_button)
+
+        left_square= Color("#6f2dbd")
+        left_square.setFixedSize(200,95)
+        left_button_group.addWidget(left_square)
+
+        left_button_sunken.setLayout(left_button_group)
+
+        main_layout.addWidget(left_button_sunken)
+
+        # Create a colored square (left side)
+        square = Color("#081b3b")
+        square.setFixedSize(500, 470)  # Square dimensions
+
+        #Adding a stacked widget where the square was so i can switch between the square and text in the middle when a button is pressed
+        self.middle_widget = QStackedWidget()
+        self.middle_widget.addWidget(square)
+
+        middle_layout=QVBoxLayout()
+        middle_layout.addStretch()
+        middle_layout.addWidget(self.middle_widget)
+        middle_layout.addStretch()
+
+        #adding the vertical layout inside the middle part of the main layout so that it is vertically centred
+        main_layout.addLayout(middle_layout)
+
+        light_button.clicked.connect(lambda: self.go_light(self.middle_widget))
+
+        # Create a vertical layout for the buttons (right side)
+        button_layout = QVBoxLayout()
+
+        button_sunken= QWidget()
+        button_sunken.setFixedSize(150, 470)
+        button_sunken.setStyleSheet('''background-color: #091E42;
+                                       border-radius: 5px;
+                                    '''
+                                    )
+        button_sunken.setLayout(button_layout)
+
+        # Create square buttons
+        button1 = QPushButton("Temperature")
+        button1.setFixedSize(130,130)
+        
+        button1.setStyleSheet("""
+            QPushButton {
+                background-color:#172B4D ;
+                color: #ffffff;
+                font-size: 20px;
+                border: 1px solid #071835;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #2e405f;
+                
+            }
+                              
+            QPushButton:pressed {
+                background-color: #42A5F5;
+            }
+            """
+        )
+        button1.clicked.connect(lambda: self.go_temp(self.middle_widget))
+
+        button2 = QPushButton("Pressure")
+        button2.setFixedSize(130,130)
+        button2.setStyleSheet("""
+            QPushButton {
+                background-color:#172B4D ;
+                color: #ffffff;
+                font-size: 20px;
+                border: 1px solid #071835;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #2e405f;
+                
+            }
+                              
+            QPushButton:pressed {
+                background-color: #42A5F5;
+            }
+            """
+        )
+        button2.clicked.connect(lambda: self.go_pressure(self.middle_widget))
+
+        # Create rectangular buttons
+        button3 = QPushButton("Tools")
+        button3.setFixedSize(50, 150)
+        #setting the style sheet for the rectangle button 0
+        button3.setStyleSheet("""
+            QPushButton {
+                background-color:#172B4D ;
+                color: #ffffff;
+                font-size: 10px;
+                border: 1px solid #071835;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #90CAF9;
+                
+            }
+                              
+            QPushButton:pressed {
+                background-color: #42A5F5;
+            }
+            """
+        )
+
+        rectangle_button = QPushButton("Articles")
+        rectangle_button.setFixedSize(130, 90)  # Rectangle dimensions
+        #setting style sheet for the rectangle button
+        
+        rectangle_button.setStyleSheet("""
+            QPushButton {
+                background-color:#172B4D ;
+                color: #ffffff;
+                font-size: 20px;
+                border: 1px solid #071835;
+                border-radius: 30px;
+            }
+            QPushButton:hover {
+                background-color: #2e405f;
+                
+            }
+                              
+            QPushButton:pressed {
+                background-color: #42A5F5;
+            }
+            """
+        )
+
+        # Create a button group
+        button_group = QButtonGroup()
+        button_group.addButton(button1)
+        button_group.addButton(button2)
+
+        horizontal_layout = QHBoxLayout()
+        horizontal_layout.addWidget(button3)
+        #horizontal_layout.addWidget(rectangle_button)
+
+        # Add buttons to the layout
+        button_layout.addWidget(button1)
+        button_layout.addWidget(button2)
+        button_layout.addWidget(rectangle_button)
+
+        # Add the button layout to the main layout
+        main_layout.addWidget(button_sunken)
+    
+    def go_light(self, middle_widget):
+        self.light_page = LightPage(brightness_percentage, brightness_raw)
+        middle_widget.addWidget(self.light_page)
+        middle_widget.setCurrentWidget(self.light_page)
+        
+    def go_temp(self, middle_widget):
+        self.temp_page = TempPage()
+        middle_widget.addWidget(self.temp_page)
+        middle_widget.setCurrentWidget(self.temp_page)
+        
+    def go_pressure(self, middle_widget):
+        self.pressure_page = PressurePage()
+        middle_widget.addWidget(self.pressure_page)
+        middle_widget.setCurrentWidget(self.pressure_page)
+        
+    def go_humidity(self, middle_widget):
+        self.humidity_page = HumidityPage()
+        middle_widget.addWidget(self.humidity_page)
+        middle_widget.setCurrentWidget(self.humidity_page)
+
+
+class HumidityPage(QWidget):
+    def __init__(self):
+        super().__init__()
+        
+        # Enable auto-fill background
+        self.setAutoFillBackground(True)
+
+        # Set the desired background color of the homepage 
+        palette = self.palette()
+        color = QColor("#172B4D")  # Change this color as needed
+        palette.setColor(QPalette.Window, color)
+        self.setPalette(palette)
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        
+        humidity = round(sense.get_humidity(),2)
+        
+        home_button= QLabel("Humidity: ")
+        home_button.setStyleSheet('''color:#90caf9;
+                               background-color: #091E42;
+                                
+                                font-size:34px;
+                                border: 3px solid #90caf9;
+                                border-radius: 5px;
+        ''')
+        
+        home_button1= QLabel(f"{humidity} g/m³")
+        home_button1.setStyleSheet('''color:#90caf9;
+                                      font-size:34px;
+                                      
+        ''')
+        
+        layout.addStretch()
+        layout.addWidget(home_button)
+        layout.addWidget(home_button1)
+        layout.addStretch()
+
+class TempPage(QWidget):
+    def __init__(self):
+        super().__init__()
+        
+        # Enable auto-fill background
+        self.setAutoFillBackground(True)
+
+        # Set the desired background color of the homepage 
+        palette = self.palette()
+        color = QColor("#172B4D")  # Change this color as needed
+        palette.setColor(QPalette.Window, color)
+        self.setPalette(palette)
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        
+        temp  = round(sense.get_temperature(),2)
+        
+        label= QLabel("Tempurature:" )
+        label2=QLabel (f"{temp} degrees Celcius")
+        label.setStyleSheet('''color:#90caf9;
+                               background-color: #091E42;
+                                
+                                font-size:34px;
+                                border: 3px solid #90caf9;
+                                border-radius: 5px;
+        ''')
+        label2.setStyleSheet('''color:#90caf9;
+                                font-size:34px;
+        ''')
+        
+        layout.addStretch()
+        layout.addWidget(label)
+        layout.addWidget(label2)
+        layout.addStretch()
+        
+class PressurePage(QWidget):
+    def __init__(self):
+        super().__init__()
+        
+        # Enable auto-fill background
+        self.setAutoFillBackground(True)
+
+        # Set the desired background color of the homepage 
+        palette = self.palette()
+        color = QColor("#172B4D")  # Change this color as needed
+        palette.setColor(QPalette.Window, color)
+        self.setPalette(palette)
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        
+        pressure = round(sense.get_pressure(),2)
+        
+        home_button= QLabel("Pressure: ") 
+        home_button1= QLabel(f"{pressure} Pascals")
+        home_button.setStyleSheet('''color:#90caf9;
+                               background-color: #091E42;
+                                
+                                font-size:34px;
+                                border: 3px solid #90caf9;
+                                border-radius: 5px;
+        ''')
+        home_button1.setStyleSheet('''color:#90caf9;
+                                      font-size: 34px;
+        ''')
+        
+        layout.addStretch()
+        layout.addWidget(home_button)
+        layout.addWidget(home_button1)
+        layout.addStretch()
+        
+class LightPage(QWidget):
+    def __init__(self, brightness_percentage, brightness_raw):
+        super().__init__()
+        
+        # Enable auto-fill background
+        self.setAutoFillBackground(True)
+
+        # Set the desired background color of the homepage 
+        palette = self.palette()
+        color = QColor("#172B4D")  # Change this color as needed
+        palette.setColor(QPalette.Window, color)
+        self.setPalette(palette)
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        
+        home_button= QLabel("Brightness:")
+        home_button.setStyleSheet('''color:#90caf9;
+                               background-color: #091E42;
+                                
+                                font-size:34px;
+                                border: 3px solid #90caf9;
+                                border-radius: 5px;
+        ''')
+        home_button1= QLabel(f"Percentage: {round(brightness_percentage,2)}%")
+        home_button1.setStyleSheet("""color: #90caf9;
+                                      font-size: 34px;
+        """
+        )
+        home_button2= QLabel(f"Raw Value: {brightness_raw} lux")
+        home_button2.setStyleSheet("""color: #90caf9;
+                                      font-size: 34px;
+        """
+        )
+        
+        bar_layout= QHBoxLayout()
+        
+        filled_bar= QWidget()
+        filled_bar.setFixedSize(int(brightness_percentage*2),40)
+        filled_bar.setStyleSheet('''background-color: #90caf9;
+        ''')
+        
+        empty_bar=QWidget()
+        empty_bar.setFixedSize(200-(int(brightness_percentage*2)),40)
+        empty_bar.setStyleSheet('''background-color: #091E42;
+        ''')
+        
+        bar_layout.addWidget(filled_bar)
+        bar_layout.addWidget(empty_bar)
+        
+        layout.addStretch()
+        layout.addWidget(home_button)
+        layout.addWidget(home_button1)
+        layout.addWidget(home_button2)
+        layout.addLayout(bar_layout)
+        layout.addStretch()
+
+if __name__ == "__main__":
+    import sys
+    app = QApplication(sys.argv)
+    window = WelcomePage()
+    window.show()
+    
+    sys.exit(app.exec_())
